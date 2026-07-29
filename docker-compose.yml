@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    container_name: cofradia-scheduler-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cofradia_scheduler
+      POSTGRES_USER: cofradia
+      POSTGRES_PASSWORD: cofradia
+    ports:
+      - "5432:5432"
+    volumes:
+      - cofradia-db-data:/var/lib/postgresql/data
+
+volumes:
+  cofradia-db-data:
