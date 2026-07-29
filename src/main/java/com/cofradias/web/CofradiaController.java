@@ -65,6 +65,19 @@ public class CofradiaController {
                 .toList();
     }
 
+    @GetMapping("/cofradias/{id}")
+    public CofradiaDtos.Response obtener(@PathVariable Long id, Authentication authentication) {
+        Cofradia cofradia = cofradiaRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cofradia no encontrada"));
+
+        Usuario usuarioActual = currentUserProvider.resolve(authentication);
+        if (!cofradia.getEscenario().getUsuario().getId().equals(usuarioActual.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes consultar cofradias de otro usuario");
+        }
+
+        return toResponse(cofradia);
+    }
+
     private Escenario escenarioDelPropietario(Long escenarioId, Authentication authentication) {
         Escenario escenario = escenarioRepository.findById(escenarioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Escenario no encontrado"));

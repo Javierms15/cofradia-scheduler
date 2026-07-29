@@ -104,9 +104,12 @@ problema.
 | Autenticación | Spring Security + JWT (`io.jsonwebtoken`, jjwt 0.12.6) |
 | Build | Maven (con Maven Wrapper, `mvnw`/`mvnw.cmd`) |
 | Tests | JUnit 5, Mockito, AssertJ, MockMvc, JaCoCo |
+| Frontend | React 19 + TypeScript + Vite, React Router, Leaflet + `leaflet-draw` |
 
-El frontend (React + Leaflet, para dibujar los recorridos sobre un mapa) todavía no está
-implementado — ver [Estado del proyecto](#estado-del-proyecto-y-próximos-pasos).
+El frontend vive en [`frontend/`](frontend) y tiene su propio
+**[README con la documentación técnica del frontend](frontend/README.md)** (estructura, rutas,
+cómo se dibuja un recorrido en el mapa, conexión con la API). Este documento cubre el backend en
+detalle y, más abajo, el arranque conjunto de todo el proyecto.
 
 ## Requisitos previos
 
@@ -116,24 +119,45 @@ implementado — ver [Estado del proyecto](#estado-del-proyecto-y-próximos-paso
   [incidencias de entorno](#incidencias-de-entorno-encontradas-durante-el-desarrollo)).
 - **Docker Desktop** — para levantar PostgreSQL + PostGIS vía `docker-compose.yml`. En Windows
   requiere WSL2.
+- **Node.js 20 o superior** (LTS) — solo para el frontend. Desarrollado con Node 24.18.1 LTS.
 - No hace falta instalar Maven: el proyecto incluye el Maven Wrapper (`mvnw` / `mvnw.cmd`).
 
-## Arranque rápido
+## Arranque rápido (todo el proyecto)
+
+Se necesitan **tres terminales** abiertas a la vez: base de datos, backend y frontend.
 
 ```bash
-# 1. Levantar la base de datos (PostgreSQL 17 + PostGIS 3.5)
+# 1. Base de datos — PostgreSQL 17 + PostGIS 3.5 (queda en segundo plano)
 docker compose up -d
 
-# 2. Arrancar la aplicación
+# 2. Backend — API REST en http://localhost:8080
 ./mvnw spring-boot:run
 ```
 
-La API queda escuchando en `http://localhost:8080`. La primera vez, Hibernate crea el esquema
-completo automáticamente (`spring.jpa.hibernate.ddl-auto=update` en
-[application.yml](src/main/resources/application.yml)).
+```bash
+# 3. Frontend — en otra terminal, interfaz web en http://localhost:5173
+cd frontend
+npm install    # solo la primera vez
+npm run dev
+```
+
+Abre **`http://localhost:5173`** en el navegador — ahí está la aplicación completa (registro,
+login, escenarios, cofradías, mapa para dibujar recorridos y optimización). El backend por sí
+solo, en `http://localhost:8080`, solo expone la API REST (ver más abajo) sin interfaz visual.
+
+La primera vez que arranca el backend, Hibernate crea el esquema completo de la base de datos
+automáticamente (`spring.jpa.hibernate.ddl-auto=update` en
+[application.yml](src/main/resources/application.yml)) — no hace falta ejecutar ningún script SQL
+a mano.
 
 Credenciales de la base de datos de desarrollo (ver [docker-compose.yml](docker-compose.yml)):
 base de datos `cofradia_scheduler`, usuario y contraseña `cofradia`.
+
+Para parar todo: `Ctrl+C` en las terminales del backend y frontend, y `docker compose down` para
+la base de datos (añade `-v` si además quieres borrar los datos guardados).
+
+Más detalle del frontend (estructura, rutas, cómo funciona el mapa) en su
+[propio README](frontend/README.md).
 
 ## Estructura del proyecto
 
@@ -305,7 +329,7 @@ problema.
 
 ## Testing y cobertura
 
-El proyecto tiene **77 tests** (43 unitarios + 34 de integración) con una cobertura, medida con
+El proyecto tiene **80 tests** (43 unitarios + 37 de integración) con una cobertura, medida con
 JaCoCo, de:
 
 | Métrica | Cobertura |
@@ -390,9 +414,16 @@ otra máquina:
 - API REST completa para gestionar escenarios, cofradías y recorridos (con geometría).
 - Motor de optimización con Choco Solver, probado con casos reales de margen y de conflicto.
 - Suite de tests con cobertura muy alta (ver arriba).
+- Frontend React + Leaflet completo: registro/login, gestión de escenarios y cofradías, mapa para
+  dibujar recorridos con `leaflet-draw`, y visualización de resultados de optimización — ver
+  [README del frontend](frontend/README.md).
 
 **Pendiente:**
-- Frontend React + Leaflet para dibujar los recorridos sobre un mapa.
+- Tests automatizados del frontend (el backend ya tiene una suite completa).
+- Variable de entorno para la URL de la API en el frontend (ahora mismo está fijada a
+  `http://localhost:8080/api`, ver [README del frontend](frontend/README.md#conexión-con-el-backend)).
+- Edición y borrado de escenarios/cofradías/recorridos (backend y frontend solo soportan alta y
+  consulta por ahora).
 - Ejecución asíncrona del solver (`@Async` + *polling* o WebSocket) si el volumen de cofradías por
   escenario crece significativamente.
 - Migrar los tests de integración a Testcontainers en cuanto se resuelva la incompatibilidad con

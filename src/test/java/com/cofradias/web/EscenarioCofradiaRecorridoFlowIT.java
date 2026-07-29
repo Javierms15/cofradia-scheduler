@@ -81,6 +81,41 @@ class EscenarioCofradiaRecorridoFlowIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void obtenerUnaCofradiaPorIdDevuelveSusDatos() throws Exception {
+        UsuarioRegistrado javier = registrar("Javier", emailUnico("cofradia-get"), "clave12345");
+        long escenarioId = crearEscenario(javier, "Con cofradia");
+        long cofradiaId = crearCofradia(javier, escenarioId, "Pollinica");
+
+        mockMvc.perform(get("/api/cofradias/" + cofradiaId)
+                        .header("Authorization", bearer(javier.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(cofradiaId))
+                .andExpect(jsonPath("$.nombre").value("Pollinica"))
+                .andExpect(jsonPath("$.escenarioId").value(escenarioId));
+    }
+
+    @Test
+    void obtenerUnaCofradiaInexistenteDevuelve404() throws Exception {
+        UsuarioRegistrado javier = registrar("Javier", emailUnico("cofradia-404"), "clave12345");
+
+        mockMvc.perform(get("/api/cofradias/999999")
+                        .header("Authorization", bearer(javier.token())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void obtenerUnaCofradiaDeOtroUsuarioDevuelve403() throws Exception {
+        UsuarioRegistrado javier = registrar("Javier", emailUnico("cofradia-403"), "clave12345");
+        UsuarioRegistrado maria = registrar("Maria", emailUnico("cofradia-403m"), "otraclave1");
+        long escenarioId = crearEscenario(javier, "Privado");
+        long cofradiaId = crearCofradia(javier, escenarioId, "Privada");
+
+        mockMvc.perform(get("/api/cofradias/" + cofradiaId)
+                        .header("Authorization", bearer(maria.token())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void unRecorridoConMenosDeDosPuntosDevuelve400Limpio() throws Exception {
         UsuarioRegistrado javier = registrar("Javier", emailUnico("validacion"), "clave12345");
         long escenarioId = crearEscenario(javier, "Test");
